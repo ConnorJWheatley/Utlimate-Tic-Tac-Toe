@@ -9,10 +9,10 @@ class Board:
         self.squares = [([0] * SQR_SIZE) for row in range(SQR_SIZE)]
 
         self.board_dims = board_dims
-
         if not board_dims:
             self.board_dims = BoardDimensions(WIDTH, 0, 0)
 
+        # used for creating shapes
         self.linewidth = linewidth
         self.offset = self.board_dims.sqsize * 0.2
         self.radius = (self.board_dims.sqsize // 2) * 0.75
@@ -123,47 +123,61 @@ class Board:
         # if using ultimate board
         sqr.draw_symbol(surface, xclick, yclick)
 
-    def check_sqr_win(self, player):
+    def check_sqr_win(self, player, xclick, yclick):
 
-        for row in range(SQR_SIZE):
-            for col in range(SQR_SIZE):
+        row = self.get_row(yclick)
+        col = self.get_column(xclick) 
+        sqr = self.squares[row][col]
 
-                sqr = self.squares[row][col]
-                # if using ultimate board
-                if isinstance(sqr, Board):
-                    sqr.check_sqr_win(player)
-                
-                # checks for vertical lines
-                for v in range(SQR_SIZE):
-                    if self.squares[0][v] == self.squares[1][v] == self.squares[2][v] == player:
-                        self.active = False
-                        self.brd_winner = player
-                
-                # checks for horizontal lines
-                for h in range(SQR_SIZE):
-                    if self.squares[h][0] == self.squares[h][1] == self.squares[h][2] == player:
-                        self.active = False
-                        self.brd_winner = player
+        # if using ultimate board
+        if isinstance(sqr, Board):
+            return sqr.check_sqr_win(player, xclick, yclick)
 
-                # checks diagonal lines
-                if self.squares[0][0] == self.squares[1][1] == self.squares[2][2] == player:
-                    self.active = False
-                    self.brd_winner = player
+        # checks for vertical lines
+        for v in range(SQR_SIZE):
+            if self.squares[0][v] == self.squares[1][v] == self.squares[2][v] == player and self.active == True:
+                self.active = False
+                self.brd_winner = player
+                print("vertical")
+                return True
+        
+        # checks for horizontal lines
+        for h in range(SQR_SIZE):
+            if self.squares[h][0] == self.squares[h][1] == self.squares[h][2] == player and self.active == True:
+                self.active = False
+                self.brd_winner = player
+                print("horizontal")
+                return True
 
-                if self.squares[0][2] == self.squares[1][1] == self.squares[2][0] == player:
-                    self.active = False
-                    self.brd_winner = player
+        # checks diagonal lines
+        if self.squares[0][0] == self.squares[1][1] == self.squares[2][2] == player and self.active == True:
+            self.active = False
+            self.brd_winner = player
+            print("left diag")
+            return True
+
+        if self.squares[0][2] == self.squares[1][1] == self.squares[2][0] == player and self.active == True:
+            self.active = False
+            self.brd_winner = player
+            print("right diag")
+            return True
+        
+        # using return True in each IF statement does not work, some sort of weird thing with looping maybe? need to figure this out
+        # return True
 
     def check_brd_win(self, player):
         
+        # used to check if board is ultimate or not
         sqr = self.squares[0][0]
         if not isinstance(sqr, Board):
             if self.active == False:
                 print("GAME OVER PAL! YOU LOSE! HAHAHAHAHAH")
                 return True
+            return False
             
         player_wins_brd = [([0] * SQR_SIZE) for row in range(SQR_SIZE)]
 
+        # create a "board" which represents which squares are owned by which player
         for row in range(SQR_SIZE):
             for col in range(SQR_SIZE):
                 sqr: Board = self.squares[row][col]
@@ -173,17 +187,40 @@ class Board:
         for v in range(SQR_SIZE):
             if player_wins_brd[0][v] == player_wins_brd[1][v] == player_wins_brd[2][v] == player:
                 print("YOU GOT A VERTICAL IN ULTIMATE")
+                return True
 
         # checks for horizontal lines
         for h in range(SQR_SIZE):
             if player_wins_brd[h][0] == player_wins_brd[h][1] == player_wins_brd[h][2] == player:
                 print("YOU GOT A HORIZONTAL IN ULTIMATE")
+                return True
 
         # checks diagonal lines
         if player_wins_brd[0][0] == player_wins_brd[1][1] == player_wins_brd[2][2] == player:
             print("YOU GOT A DIAGOANL LEFT TO RIGHT IN ULTIMATE")
+            return True
 
         if player_wins_brd[0][2] == player_wins_brd[1][1] == player_wins_brd[2][0] == player:
             print("YOU GOT A DIAGOANL RIGHT TO LEFT IN ULTIMATE")
+            return True
+    
+    def draw_sqr_symbol(self, surface, xclick, yclick):
+        row = self.get_row(yclick)
+        col = self.get_column(xclick)
+
+        sqr = self.squares[row][col]
+
+        print(self.squares[row][col])
+
+        if isinstance(sqr, Board):
+            sqr_win_surface = pygame.Surface((sqr.board_dims.size, sqr.board_dims.size))
+            sqr_win_surface.set_alpha(ALPHA)
+            if sqr.brd_winner == 1:
+                sqr_win_surface.fill(BLUE_WIN)
+            else:
+                sqr_win_surface.fill(RED_WIN)
+            surface.blit(sqr_win_surface, (sqr.board_dims.xcor, sqr.board_dims.ycor))
+
+            print("LOOK DRAW BIG SHAPE USING THESE VALUES", sqr.board_dims.xcor, sqr.board_dims.ycor)
 
         
