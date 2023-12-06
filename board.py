@@ -161,9 +161,6 @@ class Board:
             self.brd_winner = player
             print("right diag")
             return True
-        
-        # using return True in each IF statement does not work, some sort of weird thing with looping maybe? need to figure this out
-        # return True
 
     def check_brd_win(self, player):
         
@@ -223,4 +220,8 @@ class Board:
 
             print("LOOK DRAW BIG SHAPE USING THESE VALUES", sqr.board_dims.xcor, sqr.board_dims.ycor)
 
-        
+    def disable_board(self):
+        for row in range(SQR_SIZE):
+            for col in range(SQR_SIZE):
+                sqr: Board = self.squares[row][col]
+                sqr.active = False
