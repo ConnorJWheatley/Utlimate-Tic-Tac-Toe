@@ -22,6 +22,7 @@ class Board:
 
         self.active = True
         self.brd_winner = -1
+        self.tie_sqr = 0
 
     def create_ultimate_board(self):
         for row in range(SQR_SIZE):
@@ -63,9 +64,6 @@ class Board:
         col = self.get_column(xclick)
         sqr = self.squares[row][col]
 
-        # might want to come up with some logic so that clicking on the lines of the board result in nothing happening
-        # as clicking on the lines leads to weird results
-
         # base case
         if not isinstance(sqr, Board):
             # square has to be empty or board not won
@@ -75,7 +73,6 @@ class Board:
         return sqr.validate_sqr(xclick, yclick)
     
     def mark_sqr_plyr_clicked(self, xclick, yclick, player):
-
         row = self.get_row(yclick)
         col = self.get_column(xclick)
         sqr = self.squares[row][col]
@@ -89,10 +86,8 @@ class Board:
         return sqr.mark_sqr_plyr_clicked(xclick, yclick, player)
 
     def draw_symbol(self, surface, xclick, yclick):
-
         row = self.get_row(yclick)
         col = self.get_column(xclick) 
-        
         sqr = self.squares[row][col]
 
         # base case
@@ -124,7 +119,6 @@ class Board:
         sqr.draw_symbol(surface, xclick, yclick)
 
     def check_sqr_win(self, player, xclick, yclick):
-
         row = self.get_row(yclick)
         col = self.get_column(xclick) 
         sqr = self.squares[row][col]
@@ -138,7 +132,6 @@ class Board:
             if self.squares[0][v] == self.squares[1][v] == self.squares[2][v] == player and self.active == True:
                 self.active = False
                 self.brd_winner = player
-                print("vertical")
                 return True
         
         # checks for horizontal lines
@@ -146,29 +139,24 @@ class Board:
             if self.squares[h][0] == self.squares[h][1] == self.squares[h][2] == player and self.active == True:
                 self.active = False
                 self.brd_winner = player
-                print("horizontal")
                 return True
 
         # checks diagonal lines
         if self.squares[0][0] == self.squares[1][1] == self.squares[2][2] == player and self.active == True:
             self.active = False
             self.brd_winner = player
-            print("left diag")
             return True
 
         if self.squares[0][2] == self.squares[1][1] == self.squares[2][0] == player and self.active == True:
             self.active = False
             self.brd_winner = player
-            print("right diag")
             return True
 
     def check_brd_win(self, player):
-        
         # used to check if board is ultimate or not
         sqr = self.squares[0][0]
         if not isinstance(sqr, Board):
             if self.active == False:
-                print("GAME OVER PAL! YOU LOSE! HAHAHAHAHAH")
                 return True
             return False
             
@@ -183,31 +171,24 @@ class Board:
         # checks for vertical lines
         for v in range(SQR_SIZE):
             if player_wins_brd[0][v] == player_wins_brd[1][v] == player_wins_brd[2][v] == player:
-                print("YOU GOT A VERTICAL IN ULTIMATE")
                 return True
 
         # checks for horizontal lines
         for h in range(SQR_SIZE):
             if player_wins_brd[h][0] == player_wins_brd[h][1] == player_wins_brd[h][2] == player:
-                print("YOU GOT A HORIZONTAL IN ULTIMATE")
                 return True
 
         # checks diagonal lines
         if player_wins_brd[0][0] == player_wins_brd[1][1] == player_wins_brd[2][2] == player:
-            print("YOU GOT A DIAGOANL LEFT TO RIGHT IN ULTIMATE")
             return True
 
         if player_wins_brd[0][2] == player_wins_brd[1][1] == player_wins_brd[2][0] == player:
-            print("YOU GOT A DIAGOANL RIGHT TO LEFT IN ULTIMATE")
             return True
     
     def draw_sqr_symbol(self, surface, xclick, yclick):
         row = self.get_row(yclick)
         col = self.get_column(xclick)
-
         sqr = self.squares[row][col]
-
-        print(self.squares[row][col])
 
         if isinstance(sqr, Board):
             sqr_win_surface = pygame.Surface((sqr.board_dims.size, sqr.board_dims.size))
@@ -218,10 +199,63 @@ class Board:
                 sqr_win_surface.fill(RED_WIN)
             surface.blit(sqr_win_surface, (sqr.board_dims.xcor, sqr.board_dims.ycor))
 
-            print("LOOK DRAW BIG SHAPE USING THESE VALUES", sqr.board_dims.xcor, sqr.board_dims.ycor)
-
     def disable_board(self):
         for row in range(SQR_SIZE):
             for col in range(SQR_SIZE):
                 sqr: Board = self.squares[row][col]
                 sqr.active = False
+
+    def check_for_tie_square(self, xclick, yclick, surface):
+        row = self.get_row(yclick)
+        col = self.get_column(xclick)
+        sqr = self.squares[row][col]
+
+        # base case
+        if not isinstance(sqr, Board):
+            squares_clicked = 0
+            for row in range(SQR_SIZE):
+                for col in range(SQR_SIZE):
+                    clicked_by = self.squares[row][col]
+                    if clicked_by == 1 or clicked_by == 2:
+                        squares_clicked += 1
+
+            if squares_clicked == 9 and self.active == True:
+                self.tie_sqr = True
+                self.active = False
+                return True
+            else:
+                return False
+
+        # if using ultimate board
+        return sqr.check_for_tie_square(xclick, yclick, surface)
+    
+    def draw_tie_square(self, surface, xclick, yclick):
+        row = self.get_row(yclick)
+        col = self.get_column(xclick)
+        sqr = self.squares[row][col]
+
+        if isinstance(sqr, Board):
+            sqr_tie_surface = pygame.Surface((sqr.board_dims.size, sqr.board_dims.size))
+            sqr_tie_surface.set_alpha(ALPHA)
+            sqr_tie_surface.fill(GREY)
+
+            surface.blit(sqr_tie_surface, (sqr.board_dims.xcor, sqr.board_dims.ycor))   
+    
+    def check_for_tie_game(self):
+        sqr = self.squares[0][0]
+
+        # non-ultimate
+        if not isinstance(sqr, Board):
+            if self.tie_sqr == True:
+                return True
+        else:
+            # ultimate
+            main_squares_solved = 0
+            for row in range(SQR_SIZE):
+                for col in range(SQR_SIZE):
+                    sqr: Board = self.squares[row][col]
+                    if sqr.active == False:
+                        main_squares_solved += 1
+
+            if main_squares_solved == 9:
+                return True

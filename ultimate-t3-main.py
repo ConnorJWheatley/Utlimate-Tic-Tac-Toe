@@ -1,6 +1,5 @@
 import pygame
 import sys
-import time
 
 from constants import *
 from game import Game
@@ -64,6 +63,8 @@ class UltimateTTT:
         pygame.display.set_caption("ULTIMATE TIC TAC TOE")
         game_over = False
         game_over_colour = False
+        tie_game = False
+        tie_game_colour = False
 
         self.screen.fill(BG_COLOUR)
         game.render_board(screen)
@@ -81,34 +82,48 @@ class UltimateTTT:
                         # call method to draw the symbol in the square that was clicked
                         game.board.draw_symbol(screen, xclick, yclick)
 
-                        check_sqr_win = game.board.check_sqr_win(game.player, xclick, yclick)
-
                         # call method to check if a square has been won
-                        if check_sqr_win == True:
+                        if game.board.check_sqr_win(game.player, xclick, yclick) == True:
                             
                             # draw shape for whole square
                             game.board.draw_sqr_symbol(screen, xclick, yclick)
+                        
+                        # check for a tied square
+                        if game.board.check_for_tie_square(xclick, yclick, screen):
+
+                            game.board.draw_tie_square(screen, xclick, yclick)
                             
                         # call method to check if board has been won
                         if game.board.check_brd_win(game.player) == True:
                             if self.ultimate_mode == True:
                                 game.board.disable_board()
-                            print("YOU WIN PLAYER NUMBER " + str(game.player)) # change this to text on screen
                             game_over = True
                             game_over_colour = True
-                        
-                        # if game not won, next turn
-                        game.next_turn()
+                        else:
+                            if game.board.check_for_tie_game() == True:
+                                tie_game = True
+                                tie_game_colour = True
+                            else:
+                                # if game not won, next turn
+                                game.next_turn()
 
                 if game_over == True:
+
+                    # Set screen to the colour of the winner
                     while game_over_colour == True:
                         win_surface = pygame.Surface((WIDTH, HEIGHT))
                         win_surface.set_alpha(ALPHA)
+                        player_win_font = pygame.font.SysFont("impact", 130)
+                        player_win = ""
                         if game.player == 1:
-                            win_surface.fill(RED_WIN)
-                        else:
+                            player_win = player_win_font.render(f"PLAYER {str(game.player)} HAS WON!", True, WHITE)
                             win_surface.fill(BLUE_WIN)
+                        else:
+                            player_win = player_win_font.render(f"PLAYER {str(game.player)} HAS WON!", True, WHITE)
+                            win_surface.fill(RED_WIN)
+
                         screen.blit(win_surface, (0, 0))
+                        screen.blit(player_win, (110, 220))
                         game_over_colour = False
 
                     restart_img = pygame.image.load("assets/RESTART_button.png")
@@ -116,6 +131,34 @@ class UltimateTTT:
 
                     restart_btn = Button(BTN_TOPLEFT, 400, restart_img, 0.8)
                     main_menu_btn = Button(BTN_TOPLEFT, 700, main_menu_img, 0.8)
+
+                    restart_btn.draw_btn(screen)
+                    main_menu_btn.draw_btn(screen)
+
+                    if restart_btn.btn_click() and event.type == pygame.MOUSEBUTTONDOWN:
+                        self.play()
+                    if main_menu_btn.btn_click() and event.type == pygame.MOUSEBUTTONDOWN:
+                        self.main_menu()
+
+                if tie_game == True:
+
+                    while tie_game_colour == True:
+                        tie_surface = pygame.Surface((WIDTH, HEIGHT))
+                        tie_surface.set_alpha(ALPHA)
+                        tie_surface.fill(GREY)
+                        tie_font = pygame.font.SysFont("impact", 130)
+                        tie_game_text = tie_font.render(f"THIS GAME WAS A TIE!", True, WHITE)
+
+                        screen.blit(tie_surface, (0, 0))
+                        screen.blit(tie_game_text, (55, 220))
+                        tie_game_colour = False
+
+                    restart_img = pygame.image.load("assets/RESTART_button.png")
+                    main_menu_img = pygame.image.load("assets/MAIN_MENU_button.png")
+
+                    restart_btn = Button(BTN_TOPLEFT, 400, restart_img, 0.8)
+                    main_menu_btn = Button(BTN_TOPLEFT, 700, main_menu_img, 0.8)
+
                     restart_btn.draw_btn(screen)
                     main_menu_btn.draw_btn(screen)
 
@@ -144,6 +187,11 @@ class UltimateTTT:
             back_btn.draw_btn(screen)
             change_mode_btn = Button(BTN_TOPLEFT, 200, change_mode_img, 0.8)
             change_mode_btn.draw_btn(screen)
+
+            pygame.font.init()
+            ultimate_mode_bool_font = pygame.font.SysFont("impact", 80)
+            ultimate_mode_bool = ultimate_mode_bool_font.render("UTTT mode: " + str(self.ultimate_mode), True, WHITE)
+            screen.blit(ultimate_mode_bool, (330, 400))
 
             if back_btn.btn_click() and event.type == pygame.MOUSEBUTTONDOWN:
                 self.main_menu()
